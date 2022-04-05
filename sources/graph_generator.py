@@ -1,10 +1,5 @@
 import os
 import sys
-import random
-
-# libraries used for graph generation only
-import matplotlib.pyplot as plt
-from wordcloud import WordCloud
 
 
 
