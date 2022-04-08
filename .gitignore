@@ -1,3 +1,4 @@
 .vscode
 boolean_model
+*.csv
 *.o

@@ -3,10 +3,19 @@ import csv
 import sys
 
 
+MAX_FILE_NBR = 50
 REMOVE_SYMBOLS = [ "" ]
 REPLACE_SYMBOLS = [ ".", ",", ":", ";", "!", "?", "(", ")", "\"", "-", " - ", "--", "'", "*", "`" ]
 
-def cool_func(file_path: str, stopwords: list[str]) -> list[str]:
+def generate_csv_from_boolean_model(boolean_model: dict, files_name: list[str], words: list[str]):
+    with open('boolean_table.csv', 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        writer.writerow([ '' ] + files_name)
+        for word in words:
+            writer.writerow([ word ] + [ boolean_model[word][index] for index in range(len(files_name)) ])
+
+
+def get_file_words(file_path: str, stopwords: list[str]) -> list[str]:
     file_words: list[str] = []
 
     with open(file_path, "r") as file:
@@ -32,48 +41,42 @@ def cool_func(file_path: str, stopwords: list[str]) -> list[str]:
     return file_words
 
 
-def cool_func_two(folder_name: str, stopwords: list[str]):
+def get_words_and_content(files_name: list[str], stopwords: list[str]):
     files_content = {}
     folder_words = []
 
-    for file_name in sorted(os.listdir(folder_name)):
-        print(folder_name + "/" + file_name)
-        file_words = cool_func(folder_name + "/" + file_name, stopwords)
-        files_content[file_name] = file_words
+    for index in range(len(files_name)):
+        print(folder_name + "/" + files_name[index])
+        file_words = get_file_words(folder_name + "/" + files_name[index], stopwords)
+        files_content[files_name[index]] = file_words
         folder_words += file_words
+        if index >= MAX_FILE_NBR:
+            break
 
-    folder_words = sorted(set(folder_words))
+    return sorted(set(folder_words)), files_content
 
-    print("folder_words sorted")
 
+def get_boolean_model(files_content: dict, words: list[str]):
     files_name = list(files_content.keys())
-
     boolean_word_table = {}
 
-    print(len(folder_words))
+    for word in words:
+        print(word)
+        words_boolean = [ word in files_content[files_name[index]] for index in range(len(files_name)) ]
+        boolean_word_table[word] = words_boolean
 
-    for word in folder_words:
-        words = [ word in files_content[files_name[index]] for index in range(len(files_name)) ]
-        boolean_word_table[word] = words
-        print(word, words)
-
-    print("boolean word table created")
-
-    with open('boolean_table.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([ '' ] + files_name)
-        for word in folder_words:
-            writer.writerow([ word ] + [ boolean_word_table[word][index] for index in range(len(files_name)) ])
-
-    print("csv file created")
+    return boolean_word_table
 
 
 if __name__ == "__main__":
-    if len(sys.argv) >= 3:
-        first_folder_name = sys.argv[1]
-        second_folder_name = sys.argv[2]
+    if len(sys.argv) >= 2:
+        folder_name = sys.argv[1]
+        files_name = sorted(os.listdir(folder_name))
 
-        stopwords_file = open("stopwords.txt")
-        stopwords = [ word.replace('\n', '') for word in stopwords_file.readlines() ]
+        with open("stopwords.txt") as stopwords_file:
+            stopwords = [ word.replace('\n', '') for word in stopwords_file.readlines() ]
 
-        cool_func_two(first_folder_name, stopwords)
+        folder_words, files_content = get_words_and_content(files_name, stopwords)
+        boolean_model = get_boolean_model(files_content, folder_words)
+
+        generate_csv_from_boolean_model(boolean_model, files_name, folder_words)
