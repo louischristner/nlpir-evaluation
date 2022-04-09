@@ -7,6 +7,7 @@ from numpy.linalg import norm
 
 
 MAX_FILE_NBR = 30
+MAX_FILE_RESULT = 15
 REMOVE_SYMBOLS = [ "" ]
 REPLACE_SYMBOLS = [ ".", ",", ":", ";", "!", "?", "(", ")", "\"", "-", " - ", "--", "'", "*", "`" ]
 
@@ -50,8 +51,8 @@ def get_file_words(file_path: str, stopwords: list[str]):
 
 
 def get_words_and_content(files_name: list[str], stopwords: list[str]):
-    files_content = {}
-    folder_words = []
+    files_content: dict[str, dict[str, int]] = {}
+    folder_words: list[str] = []
 
     for index in range(len(files_name)):
         file_name = files_name[index]
@@ -154,7 +155,7 @@ def get_precision_and_recall(retrieved_documents: list[str]):
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
 
-    print("PRECISION & RECALL", precision, recall)
+    print("PRECISION & RECALL:", precision, recall)
 
 
 def get_mean_average_precision(retrieved_documents: list[str]):
@@ -196,9 +197,11 @@ if __name__ == "__main__":
         query_weight_vector = get_query_weight_vector("crime money", documents, words, files_content)
         documents_cos_sin = get_ranked_documents(documents, query_weight_vector)
 
-        for doc_name in documents_cos_sin:
-            if documents_cos_sin[doc_name] > 0.0:
-                print("RESULT:", doc_name, documents_cos_sin[doc_name])
+        print("NAME OF THE DOCUMENT        COSINE SIMILARITY\n" + ("-" * 82))
+        for index, doc_name in enumerate(documents_cos_sin):
+            if index < MAX_FILE_RESULT:
+                if documents_cos_sin[doc_name] > 0.0:
+                    print("RESULT:", doc_name, " " * (30 - len(doc_name)), documents_cos_sin[doc_name])
 
         retrieved_documents = []
         for doc_name in documents_cos_sin:
