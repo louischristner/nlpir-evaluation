@@ -55,7 +55,7 @@ def get_words_and_content(files_name: list[str], stopwords: list[str]):
 
     for index in range(len(files_name)):
         file_name = files_name[index]
-        print(folder_name + "/" + file_name)
+        print("LOAD:", folder_name + "/" + file_name)
         file_words = get_file_words(folder_name + "/" + file_name, stopwords)
         files_content[file_name] = file_words
         folder_words += list(file_words.keys())
@@ -133,15 +133,10 @@ def get_ranked_documents(documents: dict[str, list[float]], query_weight_vector:
     return dict(sorted(documents_cos_sin.items(), key=lambda item: item[1], reverse=True))
 
 
-def get_precision_and_recall(documents_cos_sin: dict[str, float]):
-    retrieved_documents = []
+def get_precision_and_recall(retrieved_documents: list[str]):
     relevant_retrieved_documents = []
     relevant_not_retrieved_documents = []
     non_relevant_retrieved_documents = []
-
-    for doc_name in documents_cos_sin:
-        if documents_cos_sin[doc_name] > 0.0:
-            retrieved_documents.append(doc_name)
 
     for doc in RELEVANT_DOCUMENTS:
         if doc in retrieved_documents:
@@ -162,13 +157,8 @@ def get_precision_and_recall(documents_cos_sin: dict[str, float]):
     print("PRECISION & RECALL", precision, recall)
 
 
-def get_mean_average_precision(documents_cos_sin: dict[str, float]):
-    retrieved_documents = []
+def get_mean_average_precision(retrieved_documents: list[str]):
     cumul_precisions = []
-
-    for doc_name in documents_cos_sin:
-        if documents_cos_sin[doc_name] > 0.0:
-            retrieved_documents.append(doc_name)
 
     for index in range(len(retrieved_documents)):
         indexed_retrieved_docs = retrieved_documents[:(index + 1)]
@@ -206,5 +196,14 @@ if __name__ == "__main__":
         query_weight_vector = get_query_weight_vector("crime money", documents, words, files_content)
         documents_cos_sin = get_ranked_documents(documents, query_weight_vector)
 
-        get_precision_and_recall(documents_cos_sin)
-        get_mean_average_precision(documents_cos_sin)
+        for doc_name in documents_cos_sin:
+            if documents_cos_sin[doc_name] > 0.0:
+                print("RESULT:", doc_name, documents_cos_sin[doc_name])
+
+        retrieved_documents = []
+        for doc_name in documents_cos_sin:
+            if documents_cos_sin[doc_name] > 0.0:
+                retrieved_documents.append(doc_name)
+
+        get_precision_and_recall(retrieved_documents)
+        get_mean_average_precision(retrieved_documents)
