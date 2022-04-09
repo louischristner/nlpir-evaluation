@@ -1,0 +1,49 @@
+LOAD: movies/15-Minutes.txt
+LOAD: movies/44-Inch-Chest.txt
+LOAD: movies/A-Few-Good-Men.txt
+LOAD: movies/A-Most-Violent-Year.txt
+LOAD: movies/A-Prayer-Before-Dawn.txt
+LOAD: movies/A-Scanner-Darkly.txt
+LOAD: movies/Absolute-Power.txt
+LOAD: movies/Alien-Nation.txt
+LOAD: movies/American-Gangster.txt
+LOAD: movies/American-History-X.txt
+LOAD: movies/American-Hustle.txt
+LOAD: movies/Analyze-That.txt
+LOAD: movies/Analyze-This.txt
+LOAD: movies/Antitrust.txt
+LOAD: movies/Arsenic-and-Old-Lace.txt
+LOAD: movies/Bad-Country.txt
+LOAD: movies/Bad-Lieutenant.txt
+LOAD: movies/Bad-Santa.txt
+LOAD: movies/Badlands.txt
+LOAD: movies/Basic-Instinct.txt
+LOAD: movies/Batman-2.txt
+LOAD: movies/Batman.txt
+LOAD: movies/Big-Eyes.txt
+LOAD: movies/Big-White,-The.txt
+LOAD: movies/Birthday-Girl.txt
+LOAD: movies/BlacKkKlansman.txt
+LOAD: movies/Black-Dahlia,-The.txt
+LOAD: movies/Black-Rain.txt
+LOAD: movies/Bling-Ring,-The.txt
+LOAD: movies/Blood-and-Wine.txt
+NAME OF THE DOCUMENT        FREQUENCIES SUM
+----------------------------------------------------------------------------------
+RESULT: American-Gangster.txt           68
+RESULT: American-Hustle.txt             39
+RESULT: Black-Dahlia,-The.txt           36
+RESULT: 15-Minutes.txt                  34
+RESULT: A-Most-Violent-Year.txt         25
+RESULT: Bad-Lieutenant.txt              22
+RESULT: Batman-2.txt                    21
+RESULT: Birthday-Girl.txt               19
+RESULT: Big-White,-The.txt              17
+RESULT: Batman.txt                      16
+RESULT: Absolute-Power.txt              13
+RESULT: Bad-Country.txt                 12
+RESULT: Antitrust.txt                   11
+RESULT: Analyze-That.txt                10
+RESULT: Analyze-This.txt                8
+PRECISION & RECALL: 0.5217391304347826 0.75
+MEAN AVERAGE PRECISION: 0.7619665364074026

@@ -1,0 +1,49 @@
+LOAD: movies/15-Minutes.txt
+LOAD: movies/44-Inch-Chest.txt
+LOAD: movies/A-Few-Good-Men.txt
+LOAD: movies/A-Most-Violent-Year.txt
+LOAD: movies/A-Prayer-Before-Dawn.txt
+LOAD: movies/A-Scanner-Darkly.txt
+LOAD: movies/Absolute-Power.txt
+LOAD: movies/Alien-Nation.txt
+LOAD: movies/American-Gangster.txt
+LOAD: movies/American-History-X.txt
+LOAD: movies/American-Hustle.txt
+LOAD: movies/Analyze-That.txt
+LOAD: movies/Analyze-This.txt
+LOAD: movies/Antitrust.txt
+LOAD: movies/Arsenic-and-Old-Lace.txt
+LOAD: movies/Bad-Country.txt
+LOAD: movies/Bad-Lieutenant.txt
+LOAD: movies/Bad-Santa.txt
+LOAD: movies/Badlands.txt
+LOAD: movies/Basic-Instinct.txt
+LOAD: movies/Batman-2.txt
+LOAD: movies/Batman.txt
+LOAD: movies/Big-Eyes.txt
+LOAD: movies/Big-White,-The.txt
+LOAD: movies/Birthday-Girl.txt
+LOAD: movies/BlacKkKlansman.txt
+LOAD: movies/Black-Dahlia,-The.txt
+LOAD: movies/Black-Rain.txt
+LOAD: movies/Bling-Ring,-The.txt
+LOAD: movies/Blood-and-Wine.txt
+NAME OF THE DOCUMENT
+-----------------------------------------
+RESULT: 15-Minutes.txt
+RESULT: 44-Inch-Chest.txt
+RESULT: A-Few-Good-Men.txt
+RESULT: A-Most-Violent-Year.txt
+RESULT: Absolute-Power.txt
+RESULT: Alien-Nation.txt
+RESULT: American-Gangster.txt
+RESULT: American-History-X.txt
+RESULT: American-Hustle.txt
+RESULT: Analyze-That.txt
+RESULT: Analyze-This.txt
+RESULT: Antitrust.txt
+RESULT: Bad-Country.txt
+RESULT: Bad-Lieutenant.txt
+RESULT: Basic-Instinct.txt
+PRECISION & RECALL: 0.5217391304347826 0.75
+MEAN AVERAGE PRECISION: 0.528897939048524
