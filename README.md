@@ -19,13 +19,23 @@ More importantly, we need to evaluate the models for understanding how good the 
 - Precision & Recall
 - MAP (CG model)
 
+### Goal of the project
+
+I want to retrieve movie scripts that are about crimes for money.
+
 ## How to use
 
-To process scripts.
+To process movie scripts with boolean model.
 ```sh
-python sources/graph_generator.py crime_movies thriller_movies
+python sources/boolean_model.py movies
+```
+
+To process movie scripts with vector space model.
+```sh
+python sources/vector_space_model.py movies
 ```
 
 ## Resources
 
 https://github.com/stopwords-iso/stopwords-en/blob/master/stopwords-en.txt
+
