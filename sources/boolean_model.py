@@ -3,6 +3,7 @@ import sys
 
 
 MAX_FILE_NBR = 30
+MAX_FILE_RESULT = 15
 REMOVE_SYMBOLS = [ "" ]
 REPLACE_SYMBOLS = [ ".", ",", ":", ";", "!", "?", "(", ")", "\"", "-", " - ", "--", "'", "*", "`" ]
 
@@ -26,30 +27,19 @@ RELEVANT_DOCUMENTS = [
 ]
 
 
-def get_file_words(file_path: str, stopwords: list[str]) -> list[str]:
-    file_words: list[str] = []
+def get_file_words(file_path: str, stopwords: list[str]):
+    file_words_frequencies: dict[str, int] = {}
 
     with open(file_path, "r") as file:
         for line in file.readlines():
             clean_line = line.strip().lower()
             for symbol in REPLACE_SYMBOLS:
                 clean_line = clean_line.replace(symbol, " ")
-            file_words += clean_line.split(" ")
+            for word in clean_line.split(" "):
+                if not (word in REMOVE_SYMBOLS or word in stopwords or word.isalpha() == False):
+                    file_words_frequencies[word] = 1 if not word in file_words_frequencies else file_words_frequencies[word] + 1
 
-        file_words = sorted(set(file_words))
-
-        for symbol in REMOVE_SYMBOLS:
-            file_words.remove(symbol)
-
-        for stopword in stopwords:
-            if stopword in file_words:
-                file_words.remove(stopword)
-
-        for word in [ word for word in file_words ]:
-            if word.isalpha() == False:
-                file_words.remove(word)
-
-    return file_words
+    return file_words_frequencies
 
 
 def get_words_and_content(files_name: list[str], stopwords: list[str]):
@@ -57,10 +47,11 @@ def get_words_and_content(files_name: list[str], stopwords: list[str]):
     folder_words = []
 
     for index in range(len(files_name)):
-        print("LOAD:", folder_name + "/" + files_name[index])
-        file_words = get_file_words(folder_name + "/" + files_name[index], stopwords)
-        files_content[files_name[index]] = file_words
-        folder_words += file_words
+        file_name = files_name[index]
+        print("LOAD:", folder_name + "/" + file_name)
+        file_words = get_file_words(folder_name + "/" + file_name, stopwords)
+        files_content[file_name] = file_words
+        folder_words += list(file_words.keys())
         if index + 1 >= MAX_FILE_NBR:
             break
 
@@ -71,18 +62,21 @@ def get_words_and_content(files_name: list[str], stopwords: list[str]):
 
 
 def get_inverted_index_posting_list(files_content: dict, words: list[str], files_name: list[str]):
-    posting_list: dict[str, list[int]] = {}
+    posting_list: dict[str, list[tuple[int, int]]] = {}
 
-    for word in words:
-        posting_list[word] = list()
-        for index in range(len(files_name)):
-            if word in files_content[files_name[index]]:
-                posting_list[word].append(index)
+    for index in range(len(files_name)):
+        file_name = files_name[index]
+        file_content = files_content[file_name]
+
+        for word in file_content:
+            if not word in posting_list:
+                posting_list[word] = list()
+            posting_list[word].append((index, file_content[word]))
 
     return posting_list
 
 
-def get_documents_from_terms(query_terms: list[str], words: list[str], posting_list: dict[str, list[int]]):
+def get_documents_from_terms(query_terms: list[str], words: list[str], posting_list: dict[str, list[tuple[int, int]]]):
     query_documents: list[int] = []
 
     if len(query_terms) > 1:
@@ -90,36 +84,31 @@ def get_documents_from_terms(query_terms: list[str], words: list[str], posting_l
             clean_term = term.strip().lower()
             if clean_term in words:
                 for doc_index in posting_list[clean_term]:
-                    query_documents.append(doc_index)
+                    query_documents.append(doc_index[0])
 
     return query_documents
 
 
-def query_processing(query: str, files_content: dict, words: list[str], posting_list: dict[str, list[int]]) -> list[int]:
+def query_processing(query: str, words: list[str], posting_list: dict[str, list[int]]):
     query_documents: list[int] = []
     and_query_terms = query.split(" AND ")
-    or_query_terms = query.split(" OR ")
+
+    and_query_len = len(and_query_terms)
 
     # AND only
-    if len(and_query_terms) > 1:
+    if and_query_len > 1:
         query_documents = get_documents_from_terms(and_query_terms, words, posting_list)
-        filtered_query_documents = list(filter(lambda item: query_documents.count(item) == len(and_query_terms), query_documents))
+        filtered_query_documents = list(filter(lambda item: query_documents.count(item) == and_query_len, query_documents))
         query_documents = list(set(filtered_query_documents))
-
-    # OR only
-    elif len(or_query_terms) > 1:
-        query_documents = get_documents_from_terms(or_query_terms, words, posting_list)
-        query_documents = list(set(query_documents))
 
     return query_documents
 
 
-def get_files_name_from_query_docs(query_docs: list[int], files_name: list[str]) -> list[str]:
+def get_files_name_from_query_docs(query_docs: list[int], files_name: list[str]):
     query_doc_names: list[str] = []
 
-    for doc_index in range(len(files_name)):
-        if doc_index in query_docs:
-            query_doc_names.append(files_name[doc_index])
+    for index in query_docs:
+        query_doc_names.append(files_name[index])
 
     return query_doc_names
 
@@ -145,7 +134,7 @@ def get_precision_and_recall(retrieved_documents: list[str]):
     precision = tp / (tp + fp)
     recall = tp / (tp + fn)
 
-    print("PRECISION & RECALL", precision, recall)
+    print("PRECISION & RECALL:", precision, recall)
 
 
 def get_mean_average_precision(retrieved_documents: list[str]):
@@ -181,16 +170,18 @@ if __name__ == "__main__":
         with open("stopwords.txt") as stopwords_file:
             stopwords = [ word.replace('\n', '') for word in stopwords_file.readlines() ]
 
-        folder_words, files_content = get_words_and_content(files_name, stopwords)
+        words, files_content = get_words_and_content(files_name, stopwords)
         cleaned_files_name = list(files_content.keys())
 
-        posting_list = get_inverted_index_posting_list(files_content, folder_words, cleaned_files_name)
+        posting_list = get_inverted_index_posting_list(files_content, words, cleaned_files_name)
 
-        query_docs = query_processing("crime AND money", files_content, folder_words, posting_list)
+        query_docs = query_processing("crime AND money", words, posting_list)
         query_doc_names = get_files_name_from_query_docs(query_docs, cleaned_files_name)
 
-        for doc_name in query_doc_names:
-            print("RESULT:", doc_name)
+        print("NAME OF THE DOCUMENT\n" + ("-" * 41))
+        for index, doc_name in enumerate(query_doc_names):
+            if index < MAX_FILE_RESULT:
+                print("RESULT:", doc_name)
 
         get_precision_and_recall(query_doc_names)
         get_mean_average_precision(query_doc_names)
