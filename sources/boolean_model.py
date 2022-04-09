@@ -1,18 +1,29 @@
 import os
-import csv
 import sys
 
 
-MAX_FILE_NBR = 5
+MAX_FILE_NBR = 30
 REMOVE_SYMBOLS = [ "" ]
 REPLACE_SYMBOLS = [ ".", ",", ":", ";", "!", "?", "(", ")", "\"", "-", " - ", "--", "'", "*", "`" ]
 
-# def generate_csv_from_boolean_model(boolean_model: dict, files_name: list[str], words: list[str]):
-#     with open('boolean_table.csv', 'w', newline='') as csvfile:
-#         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-#         writer.writerow([ '' ] + files_name)
-#         for word in words:
-#             writer.writerow([ word ] + [ boolean_model[word][index] for index in range(len(files_name)) ])
+RELEVANT_DOCUMENTS = [
+    "15-Minutes.txt",
+    "Absolute-Power.txt",
+    "American-Gangster.txt",
+    "Birthday-Girl.txt",
+    "Big-White,-The.txt",
+    "Bling-Ring.txt",
+    "Bad-Santa.txt",
+    "Bad-Lieutenant.txt",
+    "A-Most-Violent-Year.txt",
+    "Bad-Country.txt",
+    "Black-Rain.txt",
+    "American-Hustle.txt",
+    "A-Scanner-Darkly.txt",
+    "Blood-and-Wine.txt",
+    "Batman-2.txt",
+    "Batman.txt",
+]
 
 
 def get_file_words(file_path: str, stopwords: list[str]) -> list[str]:
@@ -46,12 +57,15 @@ def get_words_and_content(files_name: list[str], stopwords: list[str]):
     folder_words = []
 
     for index in range(len(files_name)):
-        print(folder_name + "/" + files_name[index])
+        print("LOAD:", folder_name + "/" + files_name[index])
         file_words = get_file_words(folder_name + "/" + files_name[index], stopwords)
         files_content[files_name[index]] = file_words
         folder_words += file_words
-        if index >= MAX_FILE_NBR:
+        if index + 1 >= MAX_FILE_NBR:
             break
+
+    # force print output
+    sys.stdout.flush()
 
     return sorted(set(folder_words)), files_content
 
@@ -75,14 +89,13 @@ def get_documents_from_terms(query_terms: list[str], words: list[str], posting_l
         for term in query_terms:
             clean_term = term.strip().lower()
             if clean_term in words:
-                print(clean_term, posting_list[clean_term])
                 for doc_index in posting_list[clean_term]:
                     query_documents.append(doc_index)
 
     return query_documents
 
 
-def query_processing(query: str, files_content: dict, words: list[str], posting_list: dict[str, list[int]]):
+def query_processing(query: str, files_content: dict, words: list[str], posting_list: dict[str, list[int]]) -> list[int]:
     query_documents: list[int] = []
     and_query_terms = query.split(" AND ")
     or_query_terms = query.split(" OR ")
@@ -91,14 +104,73 @@ def query_processing(query: str, files_content: dict, words: list[str], posting_
     if len(and_query_terms) > 1:
         query_documents = get_documents_from_terms(and_query_terms, words, posting_list)
         filtered_query_documents = list(filter(lambda item: query_documents.count(item) == len(and_query_terms), query_documents))
-        cleaned_query_documents = list(set(filtered_query_documents))
-        print(cleaned_query_documents)
+        query_documents = list(set(filtered_query_documents))
 
     # OR only
-    if len(or_query_terms) > 1:
+    elif len(or_query_terms) > 1:
         query_documents = get_documents_from_terms(or_query_terms, words, posting_list)
-        cleaned_query_documents = list(set(query_documents))
-        print(cleaned_query_documents)
+        query_documents = list(set(query_documents))
+
+    return query_documents
+
+
+def get_files_name_from_query_docs(query_docs: list[int], files_name: list[str]) -> list[str]:
+    query_doc_names: list[str] = []
+
+    for doc_index in range(len(files_name)):
+        if doc_index in query_docs:
+            query_doc_names.append(files_name[doc_index])
+
+    return query_doc_names
+
+
+def get_precision_and_recall(retrieved_documents: list[str]):
+    relevant_retrieved_documents = []
+    relevant_not_retrieved_documents = []
+    non_relevant_retrieved_documents = []
+
+    for doc in RELEVANT_DOCUMENTS:
+        if doc in retrieved_documents:
+            relevant_retrieved_documents.append(doc)
+        else: relevant_not_retrieved_documents.append(doc)
+
+    for doc in retrieved_documents:
+        if not doc in RELEVANT_DOCUMENTS:
+            non_relevant_retrieved_documents.append(doc)
+
+    tp = len(relevant_retrieved_documents)
+    fp = len(non_relevant_retrieved_documents)
+    fn = len(relevant_not_retrieved_documents)
+
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    print("PRECISION & RECALL", precision, recall)
+
+
+def get_mean_average_precision(retrieved_documents: list[str]):
+    cumul_precisions = []
+
+    for index in range(len(retrieved_documents)):
+        indexed_retrieved_docs = retrieved_documents[:(index + 1)]
+
+        relevant_retrieved_documents = []
+        non_relevant_retrieved_documents = []
+
+        for doc in RELEVANT_DOCUMENTS:
+            if doc in indexed_retrieved_docs:
+                relevant_retrieved_documents.append(doc)
+
+        for doc in indexed_retrieved_docs:
+            if not doc in RELEVANT_DOCUMENTS:
+                non_relevant_retrieved_documents.append(doc)
+
+        tp = len(relevant_retrieved_documents)
+        fp = len(non_relevant_retrieved_documents)
+        cumul_precisions.append(tp / (tp + fp))
+
+    mean_average_precision = sum(cumul_precisions) / len(cumul_precisions)
+    print("MEAN AVERAGE PRECISION:", mean_average_precision)
 
 
 if __name__ == "__main__":
@@ -114,19 +186,11 @@ if __name__ == "__main__":
 
         posting_list = get_inverted_index_posting_list(files_content, folder_words, cleaned_files_name)
 
-        # for word in posting_list:
-        #     print(word, posting_list[word])
+        query_docs = query_processing("crime AND money", files_content, folder_words, posting_list)
+        query_doc_names = get_files_name_from_query_docs(query_docs, cleaned_files_name)
 
-        query_processing(
-            "Billy AND Gun",
-            files_content,
-            folder_words,
-            posting_list
-        )
+        for doc_name in query_doc_names:
+            print("RESULT:", doc_name)
 
-        query_processing(
-            "Billy OR Willy OR Gun",
-            files_content,
-            folder_words,
-            posting_list
-        )
+        get_precision_and_recall(query_doc_names)
+        get_mean_average_precision(query_doc_names)
