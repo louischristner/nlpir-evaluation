@@ -5,15 +5,37 @@ from numpy import dot
 from math import log, log2
 from numpy.linalg import norm
 
-MAX_FILE_NBR = 100
+
+MAX_FILE_NBR = 30
 REMOVE_SYMBOLS = [ "" ]
 REPLACE_SYMBOLS = [ ".", ",", ":", ";", "!", "?", "(", ")", "\"", "-", " - ", "--", "'", "*", "`" ]
+
+RELEVANT_DOCUMENTS = [
+    "15-Minutes.txt",
+    "Absolute-Power.txt",
+    "American-Gangster.txt",
+    "Birthday-Girl.txt",
+    "Big-White,-The.txt",
+    "Bling-Ring.txt",
+    "Bad-Santa.txt",
+    "Bad-Lieutenant.txt",
+    "A-Most-Violent-Year.txt",
+    "Bad-Country.txt",
+    "Black-Rain.txt",
+    "American-Hustle.txt",
+    "A-Scanner-Darkly.txt",
+    "Blood-and-Wine.txt",
+    "Batman-2.txt",
+    "Batman.txt",
+]
+
 
 def cosine_similarity(vector1: list[float], vector2: list[float]):
     return dot(vector1, vector2) / (norm(vector1) * norm(vector2))
 
-def get_file_words(file_path: str, stopwords: list[str]) -> dict[str, list[int]]:
-    file_words_frequencies: dict[str, list[int]] = {}
+
+def get_file_words(file_path: str, stopwords: list[str]):
+    file_words_frequencies: dict[str, int] = {}
 
     with open(file_path, "r") as file:
         for line in file.readlines():
@@ -27,22 +49,26 @@ def get_file_words(file_path: str, stopwords: list[str]) -> dict[str, list[int]]
     return file_words_frequencies
 
 
-def get_words_and_content(files_name: list[str], stopwords: list[str]) -> tuple[list[str], dict[str, dict[str, list[int]]]]:
+def get_words_and_content(files_name: list[str], stopwords: list[str]):
     files_content = {}
     folder_words = []
 
     for index in range(len(files_name)):
-        print(folder_name + "/" + files_name[index])
-        file_words = get_file_words(folder_name + "/" + files_name[index], stopwords)
-        files_content[files_name[index]] = file_words
+        file_name = files_name[index]
+        print(folder_name + "/" + file_name)
+        file_words = get_file_words(folder_name + "/" + file_name, stopwords)
+        files_content[file_name] = file_words
         folder_words += list(file_words.keys())
-        if index >= MAX_FILE_NBR:
+        if index + 1 >= MAX_FILE_NBR:
             break
+
+    # force print output
+    sys.stdout.flush()
 
     return sorted(set(folder_words)), files_content
 
 
-def get_term_document_weight_matrix(files_content: dict[str, dict[str, list[int]]], words: list[str]):
+def get_term_document_weight_matrix(files_content: dict[str, dict[str, int]], words: list[str]):
     documents: dict[str, list[float]] = {}
     files_amount = len(files_content)
     words_amount = len(words)
@@ -67,7 +93,7 @@ def get_term_document_weight_matrix(files_content: dict[str, dict[str, list[int]
     return documents
 
 
-def get_query_weight_vector(query: str, documents: dict[str, list[float]], words: list[str]) -> list[float]:
+def get_query_weight_vector(query: str, documents: dict[str, list[float]], words: list[str], files_content: dict) -> list[float]:
     words_amount = len(words)
     documents_amount = len(documents)
 
@@ -107,6 +133,65 @@ def get_ranked_documents(documents: dict[str, list[float]], query_weight_vector:
     return dict(sorted(documents_cos_sin.items(), key=lambda item: item[1], reverse=True))
 
 
+def get_precision_and_recall(documents_cos_sin: dict[str, float]):
+    retrieved_documents = []
+    relevant_retrieved_documents = []
+    relevant_not_retrieved_documents = []
+    non_relevant_retrieved_documents = []
+
+    for doc_name in documents_cos_sin:
+        if documents_cos_sin[doc_name] > 0.0:
+            retrieved_documents.append(doc_name)
+
+    for doc in RELEVANT_DOCUMENTS:
+        if doc in retrieved_documents:
+            relevant_retrieved_documents.append(doc)
+        else: relevant_not_retrieved_documents.append(doc)
+
+    for doc in retrieved_documents:
+        if not doc in RELEVANT_DOCUMENTS:
+            non_relevant_retrieved_documents.append(doc)
+
+    tp = len(relevant_retrieved_documents)
+    fp = len(non_relevant_retrieved_documents)
+    fn = len(relevant_not_retrieved_documents)
+
+    precision = tp / (tp + fp)
+    recall = tp / (tp + fn)
+
+    print("PRECISION & RECALL", precision, recall)
+
+
+def get_mean_average_precision(documents_cos_sin: dict[str, float]):
+    retrieved_documents = []
+    cumul_precisions = []
+
+    for doc_name in documents_cos_sin:
+        if documents_cos_sin[doc_name] > 0.0:
+            retrieved_documents.append(doc_name)
+
+    for index in range(len(retrieved_documents)):
+        indexed_retrieved_docs = retrieved_documents[:(index + 1)]
+
+        relevant_retrieved_documents = []
+        non_relevant_retrieved_documents = []
+
+        for doc in RELEVANT_DOCUMENTS:
+            if doc in indexed_retrieved_docs:
+                relevant_retrieved_documents.append(doc)
+
+        for doc in indexed_retrieved_docs:
+            if not doc in RELEVANT_DOCUMENTS:
+                non_relevant_retrieved_documents.append(doc)
+
+        tp = len(relevant_retrieved_documents)
+        fp = len(non_relevant_retrieved_documents)
+        cumul_precisions.append(tp / (tp + fp))
+
+    mean_average_precision = sum(cumul_precisions) / len(cumul_precisions)
+    print("MEAN AVERAGE PRECISION:", mean_average_precision)
+
+
 if __name__ == "__main__":
     if len(sys.argv) >= 2:
         folder_name = sys.argv[1]
@@ -118,10 +203,8 @@ if __name__ == "__main__":
         words, files_content = get_words_and_content(files_name, stopwords)
         documents = get_term_document_weight_matrix(files_content, words)
 
-        query_weight_vector = get_query_weight_vector("billy willy", documents, words)
+        query_weight_vector = get_query_weight_vector("crime money", documents, words, files_content)
         documents_cos_sin = get_ranked_documents(documents, query_weight_vector)
 
-        for doc_name in documents_cos_sin:
-            print(doc_name, documents_cos_sin[doc_name])
-
-
+        get_precision_and_recall(documents_cos_sin)
+        get_mean_average_precision(documents_cos_sin)
