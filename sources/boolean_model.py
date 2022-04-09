@@ -3,16 +3,16 @@ import csv
 import sys
 
 
-MAX_FILE_NBR = 50
+MAX_FILE_NBR = 5
 REMOVE_SYMBOLS = [ "" ]
 REPLACE_SYMBOLS = [ ".", ",", ":", ";", "!", "?", "(", ")", "\"", "-", " - ", "--", "'", "*", "`" ]
 
-def generate_csv_from_boolean_model(boolean_model: dict, files_name: list[str], words: list[str]):
-    with open('boolean_table.csv', 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-        writer.writerow([ '' ] + files_name)
-        for word in words:
-            writer.writerow([ word ] + [ boolean_model[word][index] for index in range(len(files_name)) ])
+# def generate_csv_from_boolean_model(boolean_model: dict, files_name: list[str], words: list[str]):
+#     with open('boolean_table.csv', 'w', newline='') as csvfile:
+#         writer = csv.writer(csvfile, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
+#         writer.writerow([ '' ] + files_name)
+#         for word in words:
+#             writer.writerow([ word ] + [ boolean_model[word][index] for index in range(len(files_name)) ])
 
 
 def get_file_words(file_path: str, stopwords: list[str]) -> list[str]:
@@ -56,16 +56,49 @@ def get_words_and_content(files_name: list[str], stopwords: list[str]):
     return sorted(set(folder_words)), files_content
 
 
-def get_boolean_model(files_content: dict, words: list[str]):
-    files_name = list(files_content.keys())
-    boolean_word_table = {}
+def get_inverted_index_posting_list(files_content: dict, words: list[str], files_name: list[str]):
+    posting_list: dict[str, list[int]] = {}
 
     for word in words:
-        print(word)
-        words_boolean = [ word in files_content[files_name[index]] for index in range(len(files_name)) ]
-        boolean_word_table[word] = words_boolean
+        posting_list[word] = list()
+        for index in range(len(files_name)):
+            if word in files_content[files_name[index]]:
+                posting_list[word].append(index)
 
-    return boolean_word_table
+    return posting_list
+
+
+def get_documents_from_terms(query_terms: list[str], words: list[str], posting_list: dict[str, list[int]]):
+    query_documents: list[int] = []
+
+    if len(query_terms) > 1:
+        for term in query_terms:
+            clean_term = term.strip().lower()
+            if clean_term in words:
+                print(clean_term, posting_list[clean_term])
+                for doc_index in posting_list[clean_term]:
+                    query_documents.append(doc_index)
+
+    return query_documents
+
+
+def query_processing(query: str, files_content: dict, words: list[str], posting_list: dict[str, list[int]]):
+    query_documents: list[int] = []
+    and_query_terms = query.split(" AND ")
+    or_query_terms = query.split(" OR ")
+
+    # AND only
+    if len(and_query_terms) > 1:
+        query_documents = get_documents_from_terms(and_query_terms, words, posting_list)
+        filtered_query_documents = list(filter(lambda item: query_documents.count(item) == len(and_query_terms), query_documents))
+        cleaned_query_documents = list(set(filtered_query_documents))
+        print(cleaned_query_documents)
+
+    # OR only
+    if len(or_query_terms) > 1:
+        query_documents = get_documents_from_terms(or_query_terms, words, posting_list)
+        cleaned_query_documents = list(set(query_documents))
+        print(cleaned_query_documents)
 
 
 if __name__ == "__main__":
@@ -77,6 +110,23 @@ if __name__ == "__main__":
             stopwords = [ word.replace('\n', '') for word in stopwords_file.readlines() ]
 
         folder_words, files_content = get_words_and_content(files_name, stopwords)
-        boolean_model = get_boolean_model(files_content, folder_words)
+        cleaned_files_name = list(files_content.keys())
 
-        generate_csv_from_boolean_model(boolean_model, files_name, folder_words)
+        posting_list = get_inverted_index_posting_list(files_content, folder_words, cleaned_files_name)
+
+        # for word in posting_list:
+        #     print(word, posting_list[word])
+
+        query_processing(
+            "Billy AND Gun",
+            files_content,
+            folder_words,
+            posting_list
+        )
+
+        query_processing(
+            "Billy OR Willy OR Gun",
+            files_content,
+            folder_words,
+            posting_list
+        )
